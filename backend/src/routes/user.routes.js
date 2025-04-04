@@ -5,6 +5,22 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile retrieved successfully
+ *       401:
+ *         description: Not authenticated
+ */
+router.get('/me', authenticate, userController.getCurrentUser);
+
+/**
+ * @swagger
  * /api/users/{id}/profile:
  *   get:
  *     summary: Get user profile

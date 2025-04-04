@@ -79,3 +79,20 @@ exports.updateSettings = async (req, res) => {
     return ApiResponse.error(res, 'Error updating user settings');
   }
 };
+
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
+
+    if (!user) {
+      return ApiResponse.notFound(res, 'User not found');
+    }
+
+    return ApiResponse.success(res, { user }, 'User retrieved successfully');
+  } catch (error) {
+    console.error('Get current user error:', error);
+    return ApiResponse.error(res, 'Error retrieving user');
+  }
+};

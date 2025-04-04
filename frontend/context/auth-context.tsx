@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const response = await api.get('/api/users/me');
           setUser(response.data.data.user);
         } catch (error) {
+          console.error('Auth initialization error:', error);
           localStorage.removeItem('token');
         }
       }
@@ -43,17 +44,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post('/api/auth/login', { email, password });
-    const { token, user } = response.data.data;
-    localStorage.setItem('token', token);
-    setUser(user);
+    try {
+      const response = await api.post('/api/auth/login', { email, password });
+      const { token, user } = response.data.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    const response = await api.post('/api/auth/signup', { name, email, password });
-    const { token, user } = response.data.data;
-    localStorage.setItem('token', token);
-    setUser(user);
+    try {
+      const response = await api.post('/api/auth/signup', { name, email, password });
+      const { token, user } = response.data.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+    } catch (error) {
+      console.error('Signup error:', error);
+    }
   };
 
   const logout = () => {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -26,20 +26,20 @@ api.interceptors.request.use(
 // Auth API
 export const auth = {
   signup: (data: { email: string; password: string; name: string }) =>
-    api.post('/auth/signup', data),
+    api.post('/api/auth/signup', data),
   login: (data: { email: string; password: string }) =>
-    api.post('/auth/login', data),
-  logout: () => api.post('/auth/logout'),
-  getProfile: () => api.get('/auth/me'),
+    api.post('/api/auth/login', data),
+  logout: () => api.post('/api/auth/logout'),
+  getProfile: () => api.get('/api/auth/me'),
 };
 
 // Profile API
 export const profile = {
-  get: (id: string) => api.get(`/profile/${id}`),
+  get: (id: string) => api.get(`/api/users/${id}/profile`),
   update: (id: string, data: { name?: string; email?: string }) =>
-    api.patch(`/profile/${id}`, data),
+    api.patch(`/api/users/${id}/profile`, data),
   updateSettings: (id: string, data: { darkMode?: boolean; notifications?: boolean }) =>
-    api.patch(`/settings/${id}`, data),
+    api.patch(`/api/users/${id}/settings`, data),
 };
 
 // Medical Profile API
@@ -49,8 +49,8 @@ export const medical = {
     allergies: string[];
     conditions: string[];
     medications: string[];
-  }) => api.post('/medical/profile', data),
-  getProfile: (id: string) => api.get(`/medical/profile/${id}`),
+  }) => api.post('/api/medical/profile', data),
+  getProfile: (id: string) => api.get(`/api/medical/profile/${id}`),
   updateProfile: (
     id: string,
     data: {
@@ -59,16 +59,16 @@ export const medical = {
       conditions?: string[];
       medications?: string[];
     }
-  ) => api.patch(`/medical/profile/${id}`, data),
+  ) => api.patch(`/api/medical/profile/${id}`, data),
   createEmergencyContact: (data: {
     name: string;
     phone: string;
     relationship: string;
-  }) => api.post('/medical/emergency/contact', data),
+  }) => api.post('/api/medical/emergency/contact', data),
   getEmergencyContacts: (id: string) =>
-    api.get(`/medical/emergency/contact/${id}`),
+    api.get(`/api/medical/emergency/contact/${id}`),
   getFirstAidAssistance: (symptoms: string) =>
-    api.get('/medical/emergency/assist', { params: { symptoms } }),
+    api.get('/api/medical/emergency/assist', { params: { symptoms } }),
 };
 
 // Reminders API
@@ -78,11 +78,11 @@ export const reminders = {
     description?: string;
     datetime: Date;
     type: 'medication' | 'appointment';
-  }) => api.post('/reminders', data),
-  getAll: (id: string) => api.get(`/reminders/${id}`),
+  }) => api.post('/api/reminders', data),
+  getAll: (id: string) => api.get(`/api/reminders/${id}`),
   updateStatus: (id: string, status: string) =>
-    api.patch(`/reminders/${id}`, { status }),
-  delete: (id: string) => api.delete(`/reminders/${id}`),
+    api.patch(`/api/reminders/${id}`, { status }),
+  delete: (id: string) => api.delete(`/api/reminders/${id}`),
 };
 
 export default api;

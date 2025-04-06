@@ -78,7 +78,7 @@ export default function Profile() {
                   <AvatarFallback className="text-4xl">JD</AvatarFallback>
                 </Avatar>
 
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Victor kamau</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">John Doe</h3>
                 <p className="text-slate-600 dark:text-slate-400 mb-4">Born: May 15, 1980 (45 years)</p>
 
                 <div className="w-full space-y-4">
@@ -103,7 +103,7 @@ export default function Profile() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Email</p>
-                      <p className="text-slate-900 dark:text-white">VictorQ@gmail.com</p>
+                      <p className="text-slate-900 dark:text-white">john.doe@example.com</p>
                     </div>
                     {isEditing && (
                       <Button variant="ghost" size="icon" className="h-8 w-8">

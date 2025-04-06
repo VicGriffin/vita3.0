@@ -29,49 +29,27 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showResponse, setShowResponse] = useState(false)
   const [activeTab, setActiveTab] = useState("text")
-  const [geminiResponse, setGeminiResponse] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
 
     setIsProcessing(true)
-    setGeminiResponse(null);
 
-    try {
-      // Simulate Gemini API call directly in the frontend (replace with actual API call)
-      const geminiApiResponse = await fetch('YOUR_GEMINI_API_ENDPOINT', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'YOUR_GEMINI_API_KEY_HEADER': 'YOUR_GEMINI_API_KEY', //Add your api key header and key if needed.
-        },
-        body: JSON.stringify({ prompt: query }),
-      });
-
-      if (!geminiApiResponse.ok) {
-        throw new Error('Gemini API request failed');
-      }
-
-      const geminiData = await geminiApiResponse.json();
-      const response = geminiData.response; //adjust based on your api return.
-
-      setGeminiResponse(response);
-
-    } catch (error) {
-      console.error("Error fetching Gemini response:", error);
-      setGeminiResponse("Failed to fetch response. Please try again.");
-    } finally {
+    // Simulate AI processing
+    setTimeout(() => {
       setIsProcessing(false)
       setShowResponse(true)
-    }
+    }, 1500)
   }
 
   const handleVoiceInput = () => {
+    // Simulate voice recording
     alert("Voice recording feature would start here")
   }
 
   const handleImageUpload = () => {
+    // Simulate image upload
     alert("Image upload feature would open here")
   }
 
@@ -184,7 +162,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {showResponse && geminiResponse && (
+            {showResponse && (
               <Card className="mt-6 border-0 shadow-md">
                 <CardHeader className="bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-900/30">
                   <div className="flex items-start gap-4">
@@ -193,7 +171,7 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <CardTitle>First Aid Guidance</CardTitle>
-                      <CardDescription>Based on your description: "{query}"</CardDescription>
+                      <CardDescription>Based on your description: "I burned my hand with hot water"</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -204,7 +182,8 @@ export default function Dashboard() {
                       <div>
                         <h4 className="font-medium text-amber-800 dark:text-amber-400">Severity Assessment</h4>
                         <p className="text-amber-700 dark:text-amber-300">
-                          {geminiResponse}
+                          This appears to be a minor to moderate burn. If the burn is severe (larger than 3 inches,
+                          affects joints/face, or has white/charred appearance), seek immediate medical attention.
                         </p>
                       </div>
                     </div>
@@ -440,3 +419,4 @@ function Moon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+

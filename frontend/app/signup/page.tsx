@@ -12,11 +12,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from "@/components/ui/checkbox"
 import { Heart, ArrowLeft } from "lucide-react"
 import { setCookie } from "@/lib/cookies"
-import { useAuth } from "../../context/auth-context"
 
 export default function Signup() {
   const router = useRouter()
-  const { signup } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -57,10 +55,19 @@ export default function Signup() {
     }
 
     try {
-      await signup(formData.name, formData.email, formData.password)
+      // In a real app, you would make an API call to register the user
+      // For demo purposes, we'll simulate a successful registration
+
+      // Simulate API call delay
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // Set authentication token (in a real app, this would come from your backend)
+      setCookie("auth-token", "demo-token-12345", 7) // Expires in 7 days
+
+      // Redirect to onboarding
       router.push("/onboarding")
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to create account. Please try again.")
+    } catch (err) {
+      setError("Failed to create account. Please try again.")
       setIsLoading(false)
     }
   }
@@ -222,3 +229,4 @@ export default function Signup() {
     </div>
   )
 }
+

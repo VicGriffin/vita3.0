@@ -52,9 +52,14 @@ exports.login = async (req, res) => {
       return ApiResponse.unauthorized(res, 'Invalid credentials');
     }
 
-    const isValidPassword = await user.validatePassword(password);
-    if (!isValidPassword) {
-      return ApiResponse.unauthorized(res, 'Invalid credentials');
+    try {
+      const isValidPassword = await user.validatePassword(password);
+      if (!isValidPassword) {
+        return ApiResponse.unauthorized(res, 'Invalid credentials');
+      }
+    } catch (error) {
+      console.error('Password validation error:', error);
+      return ApiResponse.error(res, 'Error validating password');
     }
 
     await user.update({ lastLogin: new Date() });

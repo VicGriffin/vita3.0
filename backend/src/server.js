@@ -39,7 +39,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/routes/*.js'],
+  apis: ['./routes/*.js'], // FIXED: adjust glob pattern if needed
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -58,30 +58,36 @@ app.get('/health', (req, res) => {
   res.json({ status: 'healthy' });
 });
 
-// Error handling middleware
+// 404 fallback route
+app.use((req, res, next) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
+// Central error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error handler:', err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
+// Start the server
 const server = app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
 
 // Set up WebSocket
 setupSocket(server);
 
-// Handle database connection
+// Connect to the database
 sequelize.authenticate()
   .then(() => {
-    console.log('Database connected successfully');
+    console.log('✅ Database connected successfully');
     return sequelize.sync();
   })
   .then(() => {
-    console.log('Database synchronized');
+    console.log('✅ Database synchronized');
   })
   .catch((err) => {
-    console.error('Unable to connect to the database:', err);
+    console.error('❌ Unable to connect to the database:', err);
   });
 
 module.exports = { app, server };

@@ -21,19 +21,77 @@ import {
 } from "lucide-react"
 import { DashboardNav } from "@/components/dashboard-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
+import "leaflet/dist/leaflet.css"
+import L from "leaflet"
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+})
+
+// MedicalFacility Component
+function MedicalFacility({
+  name,
+  type,
+  distance,
+  address,
+  phone,
+  hours,
+  rating,
+  isOpen,
+}: {
+  name: string
+  type: string
+  distance: string
+  address: string
+  phone: string
+  hours: string
+  rating: number
+  isOpen: boolean
+}) {
+  return (
+    <Card className="border border-slate-200 dark:border-slate-800">
+      <CardContent className="flex flex-col sm:flex-row justify-between gap-4 p-4">
+        <div className="space-y-1">
+          <h4 className="font-bold text-lg text-slate-900 dark:text-white">{name}</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{type} • {distance}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+            <MapPin className="h-4 w-4" /> {address}
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+            <Phone className="h-4 w-4" /> {phone}
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+            <Clock className="h-4 w-4" /> {hours}
+          </p>
+        </div>
+        <div className="flex flex-col items-end justify-between">
+          <Badge variant={isOpen ? "success" : "destructive"}>{isOpen ? "Open Now" : "Closed"}</Badge>
+          <div className="flex items-center gap-1 text-yellow-500 mt-2">
+            <Star className="h-4 w-4" />
+            <span className="font-medium">{rating}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function Locations() {
   const [searchLocation, setSearchLocation] = useState("")
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Header */}
       <header className="sticky top-0 z-10 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Heart className="h-6 w-6 text-red-500" />
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">VITA</h1>
           </div>
-
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <Avatar>
@@ -48,6 +106,7 @@ export default function Locations() {
         <DashboardNav />
 
         <main className="space-y-6">
+          {/* Page Title */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Emergency Services</h2>
@@ -62,6 +121,7 @@ export default function Locations() {
             </Button>
           </div>
 
+          {/* Search and Map */}
           <Card className="border-0 shadow-md">
             <CardHeader>
               <CardTitle>Find Medical Facilities</CardTitle>
@@ -84,192 +144,54 @@ export default function Locations() {
                 </Button>
               </div>
 
-              <Tabs defaultValue="hospitals">
+              {/* Map Display */}
+              <div className="mt-6 aspect-video relative rounded-lg overflow-hidden">
+                <MapContainer
+                  center={[-1.2921, 36.8219]}
+                  zoom={13}
+                  scrollWheelZoom={false}
+                  className="w-full h-full z-0"
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker position={[-1.2921, 36.8219]}>
+                    <Popup>Nairobi Hospital</Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+
+              {/* Tabs with Facility Data */}
+              <Tabs defaultValue="hospitals" className="mt-8">
                 <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="hospitals" className="flex items-center gap-1">
-                    <FirstAid className="h-4 w-4" />
-                    <span className="hidden sm:inline">Hospitals</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="emergency" className="flex items-center gap-1">
-                    <Ambulance className="h-4 w-4" />
-                    <span className="hidden sm:inline">Emergency</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="clinics" className="flex items-center gap-1">
-                    <Heart className="h-4 w-4" />
-                    <span className="hidden sm:inline">Clinics</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="pharmacies" className="flex items-center gap-1">
-                    <Pill className="h-4 w-4" />
-                    <span className="hidden sm:inline">Pharmacies</span>
-                  </TabsTrigger>
+                  <TabsTrigger value="hospitals"><FirstAid className="h-4 w-4" /> Hospitals</TabsTrigger>
+                  <TabsTrigger value="emergency"><Ambulance className="h-4 w-4" /> Emergency</TabsTrigger>
+                  <TabsTrigger value="clinics"><Heart className="h-4 w-4" /> Clinics</TabsTrigger>
+                  <TabsTrigger value="pharmacies"><Pill className="h-4 w-4" /> Pharmacies</TabsTrigger>
                 </TabsList>
 
-                <div className="mt-6 aspect-video relative rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <MapPin className="h-12 w-12 text-slate-400 dark:text-slate-600" />
-                    <span className="sr-only">Map showing nearby medical facilities</span>
-                  </div>
-                </div>
-
+                {/* Hospitals */}
                 <TabsContent value="hospitals" className="space-y-4 mt-4">
-                  <MedicalFacility
-                    name="City General Hospital"
-                    type="Hospital"
-                    distance="1.2 miles"
-                    address="123 Main Street, Cityville"
-                    phone="(555) 123-4567"
-                    hours="Open 24/7"
-                    rating={4.7}
-                    isOpen={true}
-                  />
-
-                  <MedicalFacility
-                    name="University Medical Center"
-                    type="Hospital"
-                    distance="2.8 miles"
-                    address="456 College Avenue, Cityville"
-                    phone="(555) 987-6543"
-                    hours="Open 24/7"
-                    rating={4.9}
-                    isOpen={true}
-                  />
-
-                  <MedicalFacility
-                    name="Memorial Hospital"
-                    type="Hospital"
-                    distance="3.5 miles"
-                    address="789 Park Road, Cityville"
-                    phone="(555) 456-7890"
-                    hours="Open 24/7"
-                    rating={4.5}
-                    isOpen={true}
-                  />
+                  <MedicalFacility name="City General Hospital" type="Hospital" distance="1.2 miles" address="123 Main Street" phone="(555) 123-4567" hours="Open 24/7" rating={4.7} isOpen />
+                  <MedicalFacility name="University Medical Center" type="Hospital" distance="2.8 miles" address="456 College Avenue" phone="(555) 987-6543" hours="Open 24/7" rating={4.9} isOpen />
                 </TabsContent>
 
+                {/* Emergency */}
                 <TabsContent value="emergency" className="space-y-4 mt-4">
-                  <MedicalFacility
-                    name="City General Hospital ER"
-                    type="Emergency Room"
-                    distance="1.2 miles"
-                    address="123 Main Street, Cityville"
-                    phone="(555) 123-4567"
-                    hours="Open 24/7"
-                    rating={4.7}
-                    isOpen={true}
-                  />
-
-                  <MedicalFacility
-                    name="Urgent Care Center"
-                    type="Urgent Care"
-                    distance="0.8 miles"
-                    address="321 Oak Street, Cityville"
-                    phone="(555) 234-5678"
-                    hours="8:00 AM - 10:00 PM"
-                    rating={4.3}
-                    isOpen={true}
-                  />
+                  <MedicalFacility name="Urgent Care Center" type="Urgent Care" distance="0.8 miles" address="321 Oak Street" phone="(555) 234-5678" hours="8 AM - 10 PM" rating={4.3} isOpen />
                 </TabsContent>
 
+                {/* Clinics */}
                 <TabsContent value="clinics" className="space-y-4 mt-4">
-                  <MedicalFacility
-                    name="Family Health Clinic"
-                    type="Clinic"
-                    distance="0.5 miles"
-                    address="567 Maple Avenue, Cityville"
-                    phone="(555) 345-6789"
-                    hours="9:00 AM - 5:00 PM"
-                    rating={4.6}
-                    isOpen={true}
-                  />
-
-                  <MedicalFacility
-                    name="Community Medical Center"
-                    type="Clinic"
-                    distance="1.7 miles"
-                    address="890 Pine Street, Cityville"
-                    phone="(555) 456-7890"
-                    hours="8:00 AM - 6:00 PM"
-                    rating={4.2}
-                    isOpen={false}
-                  />
+                  <MedicalFacility name="Family Health Clinic" type="Clinic" distance="0.5 miles" address="567 Maple Ave" phone="(555) 345-6789" hours="9 AM - 5 PM" rating={4.6} isOpen />
                 </TabsContent>
 
+                {/* Pharmacies */}
                 <TabsContent value="pharmacies" className="space-y-4 mt-4">
-                  <MedicalFacility
-                    name="City Pharmacy"
-                    type="Pharmacy"
-                    distance="0.3 miles"
-                    address="432 Elm Street, Cityville"
-                    phone="(555) 567-8901"
-                    hours="8:00 AM - 9:00 PM"
-                    rating={4.4}
-                    isOpen={true}
-                  />
-
-                  <MedicalFacility
-                    name="24-Hour Pharmacy"
-                    type="Pharmacy"
-                    distance="1.5 miles"
-                    address="765 Cedar Road, Cityville"
-                    phone="(555) 678-9012"
-                    hours="Open 24/7"
-                    rating={4.8}
-                    isOpen={true}
-                  />
+                  <MedicalFacility name="City Pharmacy" type="Pharmacy" distance="0.3 miles" address="432 Elm Street" phone="(555) 567-8901" hours="8 AM - 9 PM" rating={4.4} isOpen />
                 </TabsContent>
               </Tabs>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardHeader>
-              <CardTitle>Emergency Services Information</CardTitle>
-              <CardDescription>Important contact information for emergency services</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-100 dark:border-red-900/30">
-                  <h3 className="font-medium text-lg mb-2 text-red-800 dark:text-red-300 flex items-center gap-2">
-                    <Phone className="h-5 w-5" />
-                    Emergency Numbers
-                  </h3>
-                  <ul className="space-y-2">
-                    <li className="flex justify-between">
-                      <span className="text-slate-700 dark:text-slate-300">Emergency Services:</span>
-                      <span className="font-medium text-slate-900 dark:text-white">911</span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-slate-700 dark:text-slate-300">Poison Control:</span>
-                      <span className="font-medium text-slate-900 dark:text-white">(800) 222-1222</span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-slate-700 dark:text-slate-300">Non-Emergency Police:</span>
-                      <span className="font-medium text-slate-900 dark:text-white">(555) 789-0123</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                  <h3 className="font-medium text-lg mb-2 text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                    <Heart className="h-5 w-5" />
-                    Medical Helplines
-                  </h3>
-                  <ul className="space-y-2">
-                    <li className="flex justify-between">
-                      <span className="text-slate-700 dark:text-slate-300">Nurse Advice Line:</span>
-                      <span className="font-medium text-slate-900 dark:text-white">(555) 234-5678</span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-slate-700 dark:text-slate-300">Mental Health Crisis:</span>
-                      <span className="font-medium text-slate-900 dark:text-white">(800) 273-8255</span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-slate-700 dark:text-slate-300">Telemedicine:</span>
-                      <span className="font-medium text-slate-900 dark:text-white">(555) 345-6789</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </main>
@@ -277,74 +199,3 @@ export default function Locations() {
     </div>
   )
 }
-
-interface MedicalFacilityProps {
-  name: string
-  type: string
-  distance: string
-  address: string
-  phone: string
-  hours: string
-  rating: number
-  isOpen: boolean
-}
-
-function MedicalFacility({ name, type, distance, address, phone, hours, rating, isOpen }: MedicalFacilityProps) {
-  return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-1">
-              <div>
-                <h3 className="font-medium text-lg text-slate-900 dark:text-white">{name}</h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{type}</Badge>
-                  <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
-                    <MapPin className="mr-1 h-3 w-3" />
-                    {distance}
-                  </div>
-                </div>
-              </div>
-              <Badge
-                variant={isOpen ? "secondary" : "outline"}
-                className={isOpen ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : ""}
-              >
-                {isOpen ? "Open Now" : "Closed"}
-              </Badge>
-            </div>
-
-            <p className="text-slate-600 dark:text-slate-400 mb-2">{address}</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-              <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-                <Phone className="mr-1 h-3 w-3" />
-                {phone}
-              </div>
-              <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-                <Clock className="mr-1 h-3 w-3" />
-                {hours}
-              </div>
-              <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-                <Star className="mr-1 h-3 w-3 text-amber-500" />
-                {rating} / 5
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-row md:flex-col gap-2">
-            <Button className="flex-1 md:w-full">
-              <Navigation className="mr-2 h-4 w-4" />
-              Directions
-            </Button>
-            <Button variant="outline" className="flex-1 md:w-full">
-              <Phone className="mr-2 h-4 w-4" />
-              Call
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-

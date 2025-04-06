@@ -1,5 +1,4 @@
 const { Model } = require('sequelize');
-const bcrypt = require('bcryptjs');
 
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
@@ -22,10 +21,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'reminders'
       });
     }
-
-    async validatePassword(password) {
-      return await bcrypt.compare(password, this.password);
-    }
   }
 
   User.init({
@@ -46,9 +41,10 @@ module.exports = (sequelize, DataTypes) => {
         isEmail: true,
       },
     },
-    password: {
+    clerkId: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
     role: {
       type: DataTypes.ENUM('admin', 'doctor', 'patient'),
@@ -57,13 +53,6 @@ module.exports = (sequelize, DataTypes) => {
     profilePicture: {
       type: DataTypes.STRING,
       allowNull: true,
-    },
-    isEmailVerified: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    lastLogin: {
-      type: DataTypes.DATE,
     },
     settings: {
       type: DataTypes.JSONB,
@@ -76,18 +65,6 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'User',
-    hooks: {
-      beforeCreate: async (user) => {
-        if (user.password) {
-          user.password = await bcrypt.hash(user.password, 10);
-        }
-      },
-      beforeUpdate: async (user) => {
-        if (user.changed('password')) {
-          user.password = await bcrypt.hash(user.password, 10);
-        }
-      },
-    },
   });
 
   return User;

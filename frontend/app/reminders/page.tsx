@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useReminders } from "@/hooks/useReminders"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -15,6 +16,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function Reminders() {
   const [selectedDay, setSelectedDay] = useState("today")
+  const { reminders, loading, error, createReminder, updateReminder, deleteReminder } = useReminders()
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -74,39 +76,34 @@ export default function Reminders() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <MedicationReminder
-                      name="Lisinopril"
-                      dosage="10mg"
-                      time="8:00 AM"
-                      instructions="Take with food"
-                      completed={true}
-                    />
-
-                    <MedicationReminder
-                      name="Metformin"
-                      dosage="500mg"
-                      time="1:00 PM"
-                      instructions="Take with lunch"
-                      completed={false}
-                    />
-
-                    <MedicationReminder
-                      name="Atorvastatin"
-                      dosage="20mg"
-                      time="8:00 PM"
-                      instructions="Take in the evening"
-                      completed={false}
-                    />
-
-                    <MedicationReminder
-                      name="Vitamin D"
-                      dosage="1000 IU"
-                      time="8:00 AM"
-                      instructions="Take with breakfast"
-                      completed={true}
-                    />
-                  </div>
+                  {loading ? (
+                    <div className="text-center py-4">
+                      <p className="text-slate-600 dark:text-slate-400">Loading reminders...</p>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-4">
+                      <p className="text-red-500">{error}</p>
+                    </div>
+                  ) : reminders.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-slate-600 dark:text-slate-400">No reminders found</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {reminders.map((reminder) => (
+                        <MedicationReminder
+                          key={reminder.id}
+                          name={reminder.title}
+                          dosage={reminder.description}
+                          time={new Date(reminder.dueDate).toLocaleTimeString()}
+                          instructions={reminder.description}
+                          completed={reminder.completed}
+                          onDelete={() => deleteReminder(reminder.id)}
+                          onUpdate={(completed) => updateReminder(reminder.id, { completed })}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter>
                   <Button variant="outline" className="w-full">
@@ -124,36 +121,14 @@ export default function Reminders() {
                 <CardContent>
                   <div className="space-y-4">
                     <AppointmentReminder
-                      doctor="Dr. Sarah Johnson"
-                      specialty="Primary Care"
-                      date="May 15, 2025"
-                      time="10:30 AM"
-                      location="City Medical Center"
-                    />
-
-                    <AppointmentReminder
-                      doctor="Dr. Michael Chen"
+                      doctor="Dr. Sarah Smith"
                       specialty="Cardiologist"
-                      date="June 2, 2025"
-                      time="2:15 PM"
-                      location="Heart Health Clinic"
-                    />
-
-                    <AppointmentReminder
-                      doctor="Dr. Emily Rodriguez"
-                      specialty="Dermatologist"
-                      date="June 18, 2025"
-                      time="9:00 AM"
-                      location="Skin Care Specialists"
+                      date="April 15, 2024"
+                      time="2:30 PM"
+                      location="Heart Care Center, 123 Medical Ave"
                     />
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Appointment
-                  </Button>
-                </CardFooter>
               </Card>
             </div>
 
@@ -161,71 +136,32 @@ export default function Reminders() {
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle>Daily Health Goals</CardTitle>
-                  <CardDescription>Track your daily wellness activities</CardDescription>
+                  <CardDescription>Track your daily wellness targets</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <HealthGoal
-                      icon={<Droplet className="h-5 w-5 text-blue-500" />}
-                      title="Hydration"
-                      description="Drink 8 glasses of water"
-                      progress={5}
-                      total={8}
-                    />
+                <CardContent className="space-y-6">
+                  <HealthGoal
+                    icon={<Activity className="h-5 w-5 text-blue-500" />}
+                    title="Steps"
+                    description="Daily step count"
+                    progress={6500}
+                    total={10000}
+                  />
 
-                    <HealthGoal
-                      icon={<Activity className="h-5 w-5 text-green-500" />}
-                      title="Exercise"
-                      description="30 minutes of physical activity"
-                      progress={15}
-                      total={30}
-                    />
+                  <HealthGoal
+                    icon={<Droplet className="h-5 w-5 text-blue-500" />}
+                    title="Water Intake"
+                    description="Glasses of water"
+                    progress={6}
+                    total={8}
+                  />
 
-                    <HealthGoal
-                      icon={<Moon className="h-5 w-5 text-purple-500" />}
-                      title="Sleep"
-                      description="8 hours of quality sleep"
-                      progress={7}
-                      total={8}
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Health Goal
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              <Card className="border-0 shadow-md">
-                <CardHeader>
-                  <CardTitle>Wellness Tips</CardTitle>
-                  <CardDescription>Personalized health recommendations</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                      <h3 className="font-medium text-slate-900 dark:text-white mb-1">Stay Hydrated</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Drinking enough water helps maintain energy levels and supports overall health.
-                      </p>
-                    </div>
-
-                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                      <h3 className="font-medium text-slate-900 dark:text-white mb-1">Take Stretch Breaks</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Regular stretching improves circulation and reduces muscle tension.
-                      </p>
-                    </div>
-
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                      <h3 className="font-medium text-slate-900 dark:text-white mb-1">Practice Deep Breathing</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Deep breathing exercises can help reduce stress and improve focus.
-                      </p>
-                    </div>
-                  </div>
+                  <HealthGoal
+                    icon={<Moon className="h-5 w-5 text-blue-500" />}
+                    title="Sleep"
+                    description="Hours of sleep"
+                    progress={7}
+                    total={8}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -242,21 +178,26 @@ interface MedicationReminderProps {
   time: string
   instructions: string
   completed: boolean
+  onDelete: () => void
+  onUpdate: (completed: boolean) => void
 }
 
-function MedicationReminder({ name, dosage, time, instructions, completed }: MedicationReminderProps) {
+function MedicationReminder({ name, dosage, time, instructions, completed, onDelete, onUpdate }: MedicationReminderProps) {
   const [isCompleted, setIsCompleted] = useState(completed)
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setIsCompleted(checked)
+    onUpdate(checked)
+  }
 
   return (
     <div
       className={`flex items-start gap-4 p-4 rounded-lg border ${
-        isCompleted
-          ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
-          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+        isCompleted ? "bg-slate-50 dark:bg-slate-800/50" : "bg-white dark:bg-slate-800"
       }`}
     >
       <div className="flex-shrink-0 pt-1">
-        <Checkbox checked={isCompleted} onCheckedChange={() => setIsCompleted(!isCompleted)} id={`med-${name}`} />
+        <Checkbox checked={isCompleted} onCheckedChange={handleCheckboxChange} id={`med-${name}`} />
       </div>
 
       <div className="flex-1">
@@ -291,7 +232,7 @@ function MedicationReminder({ name, dosage, time, instructions, completed }: Med
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Edit className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={onDelete}>
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>

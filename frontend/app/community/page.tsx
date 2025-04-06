@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
+import { useCommunity, type Post } from "@/hooks/useCommunity"
+import { useComments } from "@/hooks/useComments"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,14 +15,52 @@ import { Heart, MessageSquare, ThumbsUp, Search, Filter, Send, Clock, CheckCircl
 import { DashboardNav } from "@/components/dashboard-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 
+interface CommunityQuestionProps {
+  avatar: string
+  name: string
+  role: string
+  time: string
+  question: string
+  replies: number
+  likes: number
+  isAnswered: boolean
+  onDelete: () => void
+  onClick: () => void
+}
+
 export default function Community() {
   const [newQuestion, setNewQuestion] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedPost, setSelectedPost] = useState<string | null>(null)
+  const { posts, loading, error, createPost, updatePost, deletePost } = useCommunity()
+  const { comments, loading: commentsLoading, createComment } = selectedPost ? useComments(selectedPost) : { comments: [], loading: false, createComment: null }
+  const [newComment, setNewComment] = useState("")
 
-  const handleSubmitQuestion = (e: React.FormEvent) => {
+  const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
-    alert("Your question has been submitted to the community!")
-    setNewQuestion("")
+    if (!newQuestion.trim()) return
+
+    try {
+      await createPost({
+        title: newQuestion.split('\n')[0] || 'Question',
+        content: newQuestion,
+      })
+      setNewQuestion("")
+    } catch (err) {
+      console.error('Failed to create post:', err)
+    }
+  }
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newComment.trim() || !selectedPost || !createComment) return
+
+    try {
+      await createComment(newComment)
+      setNewComment("")
+    } catch (err) {
+      console.error('Failed to create comment:', err)
+    }
   }
 
   return (
@@ -95,148 +134,206 @@ export default function Community() {
           </Card>
 
           <Tabs defaultValue="recent">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="recent">Recent</TabsTrigger>
-              <TabsTrigger value="popular">Popular</TabsTrigger>
-              <TabsTrigger value="answered">Answered</TabsTrigger>
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="recent">Recent Questions</TabsTrigger>
+              <TabsTrigger value="answered">Answered Questions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="recent" className="space-y-4 mt-4">
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Sarah Johnson"
-                role="Community Member"
-                time="2 hours ago"
-                question="What's the best way to treat a sprained ankle? I twisted it while hiking yesterday and it's swollen."
-                replies={8}
-                likes={15}
-                isAnswered={true}
-              />
+              {loading ? (
+                <div className="text-center py-4">
+                  <p className="text-slate-600 dark:text-slate-400">Loading posts...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-4">
+                  <p className="text-red-500">{error}</p>
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-slate-600 dark:text-slate-400">No posts found</p>
+                </div>
+              ) : (
+                posts
+                  .filter(post => 
+                    searchQuery ? 
+                      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+                    : true
+                  )
+                  .map(post => (
+                    <div key={post.id} className="space-y-4">
+                      <CommunityQuestion
+                        key={post.id}
+                        avatar={post.author.profilePicture || "/placeholder.svg?height=40&width=40"}
+                        name={post.author.name}
+                        role="Community Member"
+                        time={new Date(post.createdAt).toLocaleString()}
+                        question={post.content}
+                        replies={post.comments?.length || 0}
+                        likes={post.likes || 0}
+                        isAnswered={post.isAnswered}
+                        onDelete={() => deletePost(post.id)}
+                        onClick={() => setSelectedPost(post.id === selectedPost ? null : post.id)}
+                      />
+                      
+                      {selectedPost === post.id && (
+                        <Card className="ml-12 border-l-4 border-blue-500">
+                          <CardContent className="p-6">
+                            <div className="space-y-4">
+                              {commentsLoading ? (
+                                <div className="text-center py-4">
+                                  <p className="text-slate-600 dark:text-slate-400">Loading comments...</p>
+                                </div>
+                              ) : comments.length === 0 ? (
+                                <div className="text-center py-4">
+                                  <p className="text-slate-600 dark:text-slate-400">No comments yet</p>
+                                </div>
+                              ) : (
+                                comments.map(comment => (
+                                  <div key={comment.id} className="flex gap-4">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={comment.author.profilePicture || "/placeholder.svg?height=32&width=32"} alt={comment.author.name} />
+                                      <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-medium text-sm text-slate-900 dark:text-white">{comment.author.name}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(comment.createdAt).toLocaleString()}</span>
+                                      </div>
+                                      <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
 
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Michael Chen"
-                role="Community Member"
-                time="5 hours ago"
-                question="My 3-year-old has a fever of 101°F. When should I be concerned enough to see a doctor?"
-                replies={12}
-                likes={23}
-                isAnswered={true}
-              />
-
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Emily Rodriguez"
-                role="Community Member"
-                time="Yesterday"
-                question="I'm allergic to bee stings. What should I keep in my first aid kit specifically for this?"
-                replies={6}
-                likes={11}
-                isAnswered={false}
-              />
-
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="David Wilson"
-                role="Community Member"
-                time="2 days ago"
-                question="What's the difference between heat exhaustion and heat stroke? How do I identify and treat each?"
-                replies={15}
-                likes={32}
-                isAnswered={true}
-              />
-
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Lisa Thompson"
-                role="Community Member"
-                time="3 days ago"
-                question="I cut my finger while cooking and it's quite deep. How do I know if it needs stitches?"
-                replies={10}
-                likes={18}
-                isAnswered={true}
-              />
-            </TabsContent>
-
-            <TabsContent value="popular" className="space-y-4 mt-4">
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="David Wilson"
-                role="Community Member"
-                time="2 days ago"
-                question="What's the difference between heat exhaustion and heat stroke? How do I identify and treat each?"
-                replies={15}
-                likes={32}
-                isAnswered={true}
-              />
-
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Michael Chen"
-                role="Community Member"
-                time="5 hours ago"
-                question="My 3-year-old has a fever of 101°F. When should I be concerned enough to see a doctor?"
-                replies={12}
-                likes={23}
-                isAnswered={true}
-              />
-
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Lisa Thompson"
-                role="Community Member"
-                time="3 days ago"
-                question="I cut my finger while cooking and it's quite deep. How do I know if it needs stitches?"
-                replies={10}
-                likes={18}
-                isAnswered={true}
-              />
-            </TabsContent>
+                              <form onSubmit={handleSubmitComment} className="mt-4">
+                                <div className="flex gap-4">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="You" />
+                                    <AvatarFallback>Y</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <Textarea
+                                      placeholder="Write a comment..."
+                                      value={newComment}
+                                      onChange={e => setNewComment(e.target.value)}
+                                      className="min-h-[80px]"
+                                    />
+                                    <div className="mt-2 flex justify-end">
+                                      <Button type="submit" disabled={!newComment.trim()}>
+                                        <Send className="w-4 h-4 mr-2" />
+                                        Send
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </form>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  ))
+                )}
+              </TabsContent>
 
             <TabsContent value="answered" className="space-y-4 mt-4">
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="David Wilson"
-                role="Community Member"
-                time="2 days ago"
-                question="What's the difference between heat exhaustion and heat stroke? How do I identify and treat each?"
-                replies={15}
-                likes={32}
-                isAnswered={true}
-              />
+              {loading ? (
+                <div className="text-center py-4">
+                  <p className="text-slate-600 dark:text-slate-400">Loading posts...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-4">
+                  <p className="text-red-500">{error}</p>
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-slate-600 dark:text-slate-400">No posts found</p>
+                </div>
+              ) : (
+                posts
+                  .filter(post => post.isAnswered)
+                  .filter(post => 
+                    searchQuery ? 
+                      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+                    : true
+                  )
+                  .map(post => (
+                    <div key={post.id} className="space-y-4">
+                      <CommunityQuestion
+                        key={post.id}
+                        avatar={post.author.profilePicture || "/placeholder.svg?height=40&width=40"}
+                        name={post.author.name}
+                        role="Community Member"
+                        time={new Date(post.createdAt).toLocaleString()}
+                        question={post.content}
+                        replies={post.comments?.length || 0}
+                        likes={post.likes || 0}
+                        isAnswered={post.isAnswered}
+                        onDelete={() => deletePost(post.id)}
+                        onClick={() => setSelectedPost(post.id === selectedPost ? null : post.id)}
+                      />
+                      
+                      {selectedPost === post.id && (
+                        <Card className="ml-12 border-l-4 border-blue-500">
+                          <CardContent className="p-6">
+                            <div className="space-y-4">
+                              {commentsLoading ? (
+                                <div className="text-center py-4">
+                                  <p className="text-slate-600 dark:text-slate-400">Loading comments...</p>
+                                </div>
+                              ) : comments.length === 0 ? (
+                                <div className="text-center py-4">
+                                  <p className="text-slate-600 dark:text-slate-400">No comments yet</p>
+                                </div>
+                              ) : (
+                                comments.map(comment => (
+                                  <div key={comment.id} className="flex gap-4">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={comment.author.profilePicture || "/placeholder.svg?height=32&width=32"} alt={comment.author.name} />
+                                      <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-medium text-sm text-slate-900 dark:text-white">{comment.author.name}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(comment.createdAt).toLocaleString()}</span>
+                                      </div>
+                                      <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
 
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Sarah Johnson"
-                role="Community Member"
-                time="2 hours ago"
-                question="What's the best way to treat a sprained ankle? I twisted it while hiking yesterday and it's swollen."
-                replies={8}
-                likes={15}
-                isAnswered={true}
-              />
-
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Michael Chen"
-                role="Community Member"
-                time="5 hours ago"
-                question="My 3-year-old has a fever of 101°F. When should I be concerned enough to see a doctor?"
-                replies={12}
-                likes={23}
-                isAnswered={true}
-              />
-
-              <CommunityQuestion
-                avatar="/placeholder.svg?height=40&width=40"
-                name="Lisa Thompson"
-                role="Community Member"
-                time="3 days ago"
-                question="I cut my finger while cooking and it's quite deep. How do I know if it needs stitches?"
-                replies={10}
-                likes={18}
-                isAnswered={true}
-              />
+                              <form onSubmit={handleSubmitComment} className="mt-4">
+                                <div className="flex gap-4">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="You" />
+                                    <AvatarFallback>Y</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <Textarea
+                                      placeholder="Write a comment..."
+                                      value={newComment}
+                                      onChange={e => setNewComment(e.target.value)}
+                                      className="min-h-[80px]"
+                                    />
+                                    <div className="mt-2 flex justify-end">
+                                      <Button type="submit" disabled={!newComment.trim()}>
+                                        <Send className="w-4 h-4 mr-2" />
+                                        Send
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </form>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  ))
+              )}
             </TabsContent>
           </Tabs>
 
@@ -249,67 +346,76 @@ export default function Community() {
   )
 }
 
-interface CommunityQuestionProps {
-  avatar: string
-  name: string
-  role: string
-  time: string
-  question: string
-  replies: number
-  likes: number
-  isAnswered: boolean
-}
-
-function CommunityQuestion({ avatar, name, role, time, question, replies, likes, isAnswered }: CommunityQuestionProps) {
+function CommunityQuestion({
+  avatar,
+  name,
+  role,
+  time,
+  question,
+  replies,
+  likes,
+  isAnswered,
+  onDelete,
+  onClick
+}: CommunityQuestionProps) {
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
+    <Card>
       <CardContent className="p-6">
-        <div className="flex gap-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={avatar} alt={name} />
-            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
-              <div className="font-medium text-slate-900 dark:text-white">{name}</div>
-              <Badge variant="outline" className="w-fit">
-                {role}
-              </Badge>
-              <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
-                <Clock className="mr-1 h-3 w-3" />
+        <div className="flex justify-between items-start">
+          <div className="flex gap-4">
+            <Avatar>
+              <AvatarImage src={avatar} alt={name} />
+              <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-slate-900 dark:text-white">{name}</h3>
+                <Badge variant="outline">{role}</Badge>
+                {isAnswered && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Answered
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
                 {time}
-              </div>
-            </div>
-
-            <p className="text-slate-700 dark:text-slate-300 mb-3">{question}</p>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" className="h-8 gap-1 text-slate-600 dark:text-slate-400">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>{replies} Replies</span>
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 gap-1 text-slate-600 dark:text-slate-400">
-                  <ThumbsUp className="h-4 w-4" />
-                  <span>{likes}</span>
-                </Button>
-              </div>
-
-              {isAnswered && (
-                <Badge
-                  variant="secondary"
-                  className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 flex items-center gap-1"
-                >
-                  <CheckCircle className="h-3 w-3" />
-                  <span>Answered</span>
-                </Badge>
-              )}
+              </p>
             </div>
           </div>
+          <Button variant="ghost" size="icon" onClick={onDelete}>
+            <span className="sr-only">Delete question</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-4 h-4"
+            >
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          </Button>
+        </div>
+        <p className="mt-4 text-slate-900 dark:text-white">{question}</p>
+        <div className="flex items-center gap-4 mt-4">
+          <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={onClick}>
+            <MessageSquare className="w-4 h-4" />
+            {replies} Replies
+          </Button>
+          <Button variant="ghost" size="sm" className="flex items-center gap-1">
+            <ThumbsUp className="w-4 h-4" />
+            {likes} Likes
+          </Button>
         </div>
       </CardContent>
     </Card>
   )
 }
-

@@ -7,6 +7,9 @@ const { sequelize } = require('./models');
 const { setupSocket } = require('./socket');
 const corsOptions = require('./config/cors');
 
+// Clerk SDK placeholder (for future authentication)
+const { clerkClient } = require('@clerk/clerk-sdk-node');
+
 // Import routes
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
@@ -39,7 +42,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./routes/*.js'], // FIXED: adjust glob pattern if needed
+  apis: ['./routes/*.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);

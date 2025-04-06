@@ -1,79 +1,37 @@
 const express = require('express');
 const authController = require('../controllers/auth.controller');
+const { validateClerkWebhook } = require('../middleware/clerk.middleware');
 const router = express.Router();
 
 /**
  * @swagger
- * /api/auth/signup:
+ * /api/auth/webhook:
  *   post:
- *     summary: Register a new user
+ *     summary: Handle Clerk webhooks
  *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - email
- *               - password
- *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum: [admin, doctor, patient]
- *     responses:
- *       201:
- *         description: User created successfully
- *       400:
- *         description: Email already exists
- */
-router.post('/signup', authController.signup);
-
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     summary: Login user
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *     description: Endpoint for processing Clerk user events (created, updated, deleted)
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Webhook processed successfully
  *       401:
- *         description: Invalid credentials
+ *         description: Invalid webhook signature
  */
-router.post('/login', authController.login);
+router.post('/webhook', validateClerkWebhook, authController.handleWebhook);
 
 /**
  * @swagger
- * /api/auth/logout:
- *   post:
- *     summary: Logout user
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user's profile
  *     tags: [Auth]
+ *     security:
+ *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: Logged out successfully
+ *         description: User profile retrieved successfully
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/logout', authController.logout);
+router.get('/me', authController.getProfile);
 
 module.exports = router;

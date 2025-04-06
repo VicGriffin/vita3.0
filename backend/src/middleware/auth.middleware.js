@@ -19,8 +19,8 @@ exports.authenticate = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
-    res.status(401).json({ message: 'Invalid token' });
+    console.error('Authentication error:', error.message);
+    res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 

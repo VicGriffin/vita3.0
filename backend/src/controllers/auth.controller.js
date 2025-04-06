@@ -1,86 +1,63 @@
-const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const ApiResponse = require('../utils/apiResponse');
 
-const generateToken = (user) => {
-  return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || 'your-secret-key',
-    { expiresIn: '24h' }
-  );
-};
+exports.handleWebhook = async (req, res) => {
+  const { type, data } = req.body;
 
-exports.signup = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    switch (type) {
+      case 'user.created':
+        await User.create({
+          name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+          email: data.email_addresses[0]?.email_address,
+          clerkId: data.id,
+          role: 'patient', // Default role
+        });
+        break;
 
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return ApiResponse.error(res, 'Email already exists', 400);
+      case 'user.updated':
+        await User.update(
+          {
+            name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+            email: data.email_addresses[0]?.email_address,
+          },
+          { where: { clerkId: data.id } }
+        );
+        break;
+
+      case 'user.deleted':
+        await User.destroy({ where: { clerkId: data.id } });
+        break;
+
+      default:
+        // Ignore other webhook types
+        break;
     }
 
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: role || 'patient',
-    });
-
-    const token = generateToken(user);
-
-    return ApiResponse.success(res, {
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      }
-    }, 'User created successfully', 201);
+    return ApiResponse.success(res, null, 'Webhook processed successfully');
   } catch (error) {
-    console.error('Signup error:', error);
-    return ApiResponse.error(res, 'Error creating user');
+    console.error('Webhook error:', error);
+    return ApiResponse.error(res, 'Error processing webhook');
   }
 };
 
-exports.login = async (req, res) => {
+exports.getProfile = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { clerkId: req.user.clerkId } });
     if (!user) {
-      return ApiResponse.unauthorized(res, 'Invalid credentials');
+      return ApiResponse.notFound(res, 'User not found');
     }
-
-    try {
-      const isValidPassword = await user.validatePassword(password);
-      if (!isValidPassword) {
-        return ApiResponse.unauthorized(res, 'Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Password validation error:', error);
-      return ApiResponse.error(res, 'Error validating password');
-    }
-
-    await user.update({ lastLogin: new Date() });
-
-    const token = generateToken(user);
 
     return ApiResponse.success(res, {
-      token,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
       }
-    }, 'Login successful');
+    });
   } catch (error) {
-    console.error('Login error:', error);
-    return ApiResponse.error(res, 'Error during login');
+    console.error('Get profile error:', error);
+    return ApiResponse.error(res, 'Error retrieving user profile');
   }
-};
-
-exports.logout = (req, res) => {
-  return ApiResponse.success(res, null, 'Logged out successfully');
 };

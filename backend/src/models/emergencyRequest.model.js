@@ -40,6 +40,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    recommendation: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      comment: 'Stores the AI model recommendation including severity, emergency level, and first aid instructions'
+    }
   }, {
     sequelize,
     modelName: 'EmergencyRequest',
